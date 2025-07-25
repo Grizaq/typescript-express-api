@@ -6,15 +6,15 @@ import {
   updateTodo, 
   deleteTodo 
 } from '../controllers/todo.controller';
+import { validateTodoCreate, validateTodoUpdate } from '../middleware/validation.middleware';
 
 const router = Router();
 
-// Routes
+// Routes with validation
 router.get('/', getAllTodos);
 router.get('/:id', getTodoById);
-router.post('/', createTodo);
-router.put('/:id', updateTodo);
+router.post('/', validateTodoCreate, createTodo);
+router.put('/:id', validateTodoUpdate, updateTodo);
 router.delete('/:id', deleteTodo);
 
-// Export as named export instead of default export
 export const todoRoutes = router;

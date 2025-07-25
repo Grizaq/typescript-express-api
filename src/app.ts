@@ -2,10 +2,12 @@ import express from 'express';
 // Import as named import instead of default import
 import { todoRoutes } from './routes/todo.routes';
 import { errorHandler } from './middleware/error.middleware';
+import { requestLogger } from './middleware/logger.middleware';
+import { config } from './config';
 
 // Initialize express app
 const app = express();
-const PORT = 3000;
+const PORT = config.port;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -25,6 +27,9 @@ app.use('/api/todos', todoRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
+
+// Logger middleware
+app.use(requestLogger);
 
 // Start server
 app.listen(PORT, () => {
