@@ -7,7 +7,6 @@ GET http://localhost:3000/api/todos/1
 ### Create a new todo
 POST http://localhost:3000/api/todos
 Content-Type: application/json
-
 {
   "title": "Learn Express.js"
 }
@@ -15,12 +14,12 @@ Content-Type: application/json
 ### Update a todo
 PUT http://localhost:3000/api/todos/2
 Content-Type: application/json
-
 {
   "completed": true
 }
 
 ### Delete a todo
 DELETE http://localhost:3000/api/todos/1
+
 ### Test
 GET http://localhost:3000/test

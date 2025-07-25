@@ -7,13 +7,13 @@ export interface Todo {
 
 export let todos: Todo[] = [
   {
-    id: 1,
+    id: 0,
     title: "Learn TypeScript",
     completed: true,
     createdAt: new Date()
   },
   {
-    id: 2,
+    id: 1,
     title: "Build REST API",
     completed: false,
     createdAt: new Date()
