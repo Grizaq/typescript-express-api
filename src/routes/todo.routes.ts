@@ -4,7 +4,8 @@ import {
   getTodoById, 
   createTodo, 
   updateTodo, 
-  deleteTodo 
+  deleteTodo,
+  setTodoToComplete
 } from '../controllers/todo.controller';
 import { validateTodoCreate, validateTodoUpdate } from '../middleware/validation.middleware';
 
@@ -16,5 +17,6 @@ router.get('/:id', getTodoById);
 router.post('/', validateTodoCreate, createTodo);
 router.put('/:id', validateTodoUpdate, updateTodo);
 router.delete('/:id', deleteTodo);
+router.put('/:id/complete', setTodoToComplete);
 
 export const todoRoutes = router;
