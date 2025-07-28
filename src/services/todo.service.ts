@@ -56,3 +56,14 @@ export const remove = (id: number): Todo => {
   
   return deletedTodo;
 };
+
+export const completeTodo = (id: number): Todo => {
+  const todoIndex = todos.findIndex(t => t.id === id);
+
+  if (todoIndex === -1) {
+    throw new NotFoundError('Todo', id);
+  }
+
+  todos[todoIndex].completed = true;
+  return todos[todoIndex];
+}

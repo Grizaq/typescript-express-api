@@ -19,6 +19,7 @@ export const getTodoById = (req: Request, res: Response, next: NextFunction): vo
     res.status(200).json(todo);
   } catch (error) {
     next(error);
+
   }
 };
 
@@ -55,3 +56,14 @@ export const deleteTodo = (req: Request, res: Response, next: NextFunction): voi
     next(error);
   }
 };
+
+// Set a task as complete
+export const setTodoToComplete = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const id = parseInt(req.params.id);
+    const completedTodo = todoService.completeTodo(id);
+    res.status(200).json(completedTodo);
+  } catch (error) {
+    next(error);
+  }
+}
