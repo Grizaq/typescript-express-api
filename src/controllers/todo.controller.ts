@@ -1,3 +1,4 @@
+// src/controllers/todo.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import * as todoService from '../services/todo.service';
 
@@ -26,8 +27,15 @@ export const getTodoById = (req: Request, res: Response, next: NextFunction): vo
 // Create a new todo
 export const createTodo = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    const { title } = req.body;
-    const newTodo = todoService.create(title);
+    const { title, description, dueDate, priority, imageUrls, tags } = req.body;
+    const newTodo = todoService.create({
+      title,
+      description,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      priority,
+      imageUrls,
+      tags
+    });
     res.status(201).json(newTodo);
   } catch (error) {
     next(error);
@@ -38,8 +46,18 @@ export const createTodo = (req: Request, res: Response, next: NextFunction): voi
 export const updateTodo = (req: Request, res: Response, next: NextFunction): void => {
   try {
     const id = parseInt(req.params.id);
-    const { title, completed } = req.body;
-    const updatedTodo = todoService.update(id, { title, completed });
+    const { title, description, completed, dueDate, priority, imageUrls, tags } = req.body;
+    
+    const data: any = {};
+    if (title !== undefined) data.title = title;
+    if (description !== undefined) data.description = description;
+    if (completed !== undefined) data.completed = completed;
+    if (dueDate !== undefined) data.dueDate = new Date(dueDate);
+    if (priority !== undefined) data.priority = priority;
+    if (imageUrls !== undefined) data.imageUrls = imageUrls;
+    if (tags !== undefined) data.tags = tags;
+    
+    const updatedTodo = todoService.update(id, data);
     res.status(200).json(updatedTodo);
   } catch (error) {
     next(error);
@@ -66,4 +84,4 @@ export const setTodoToComplete = (req: Request, res: Response, next: NextFunctio
   } catch (error) {
     next(error);
   }
-}
+};

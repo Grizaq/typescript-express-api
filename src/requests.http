@@ -4,22 +4,47 @@ GET http://localhost:3000/api/todos
 ### Get todo by ID
 GET http://localhost:3000/api/todos/1
 
-### Create a new todo
+### Create a basic todo
 POST http://localhost:3000/api/todos
 Content-Type: application/json
+
 {
   "title": "Learn Express.js"
+}
+
+### Create a complex todo
+POST http://localhost:3000/api/todos
+Content-Type: application/json
+
+{
+  "title": "Build Android App",
+  "description": "Create a mobile app that connects to this REST API",
+  "dueDate": "2025-08-30T00:00:00.000Z",
+  "priority": 5,
+  "imageUrls": ["https://example.com/mockup1.jpg", "https://example.com/mockup2.jpg"],
+  "tags": ["mobile", "android", "project"]
 }
 
 ### Update a todo
 PUT http://localhost:3000/api/todos/2
 Content-Type: application/json
+
 {
-  "completed": true
+  "completed": true,
+  "description": "Updated description"
 }
+
+### Add tags to a todo
+PUT http://localhost:3000/api/todos/1
+Content-Type: application/json
+
+{
+  "tags": ["important", "learning"]
+}
+
+### Mark todo as complete
+PUT http://localhost:3000/api/todos/2/complete
+Content-Type: application/json
 
 ### Delete a todo
 DELETE http://localhost:3000/api/todos/1
-
-### Test
-GET http://localhost:3000/test
