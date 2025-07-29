@@ -1,3 +1,4 @@
+// src/middleware/error.middleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/errors';
 
