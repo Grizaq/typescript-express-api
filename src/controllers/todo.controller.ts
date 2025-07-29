@@ -20,6 +20,7 @@ export const getTodoById = (req: Request, res: Response, next: NextFunction): vo
     res.status(200).json(todo);
   } catch (error) {
     next(error);
+
   }
 };
 
