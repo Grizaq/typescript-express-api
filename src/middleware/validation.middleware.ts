@@ -1,4 +1,5 @@
 // src/middleware/validation.middleware.ts
+// src/middleware/validation.middleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { ValidationError } from '../utils/errors';
 
@@ -66,6 +67,11 @@ export const validateTodoUpdate = (req: Request, res: Response, next: NextFuncti
       next(new ValidationError('Title must be at least 3 characters long'));
       return;
     }
+  }
+  
+  if (description !== undefined && typeof description !== 'string') {
+    next(new ValidationError('Description must be a string'));
+    return;
   }
   
   if (description !== undefined && typeof description !== 'string') {
