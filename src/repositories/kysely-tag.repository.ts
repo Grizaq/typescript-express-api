@@ -89,8 +89,8 @@ export class KyselyTagRepository implements TagRepository {
   }
 
   async deleteByName(name: string): Promise<Tag | undefined> {
-    const tagToDelete = await this.findByName(name)
-    if (!tagToDelete) return undefined
+    const tagToDelete = await this.findByName(name);
+    if (!tagToDelete) return undefined;
 
     return this.delete(tagToDelete.id);
   }

@@ -100,7 +100,7 @@ Content-Type: application/json
 DELETE http://localhost:3000/api/todos/14
 
 ### Get todos by a non-existent tag (should return empty array)
-GET http://localhost:3000/api/tags/non-existent-tag
+GET http://localhost:3000/api/tags/containing/non-existent-tag
 
 ### Get used tags (tags with count > 0)
 GET http://localhost:3000/api/tags/used
@@ -109,7 +109,7 @@ GET http://localhost:3000/api/tags/used
 GET http://localhost:3000/api/tags/unused
 
 ### Delete tag by ID (keep in mind the id has to exist and be unused)
-DELETE http://localhost:3000/api/tags/6
+DELETE http://localhost:3000/api/tags/id/6
 
 ### Add a new tag, add before deleting
 POST http://localhost:3000/api/tags
@@ -120,7 +120,7 @@ Content-Type: application/json
 }
 
 ### Delete tag by name, add some name each time wit hthe call above
-DELETE http://localhost:3000/api/tags/feature
+DELETE http://localhost:3000/api/tags/name/feature
 
 ### Delete a non existent tag
-DELETE http://localhost:3000/api/tags/edftegj4
+DELETE http://localhost:3000/api/tags/name/edftegj4

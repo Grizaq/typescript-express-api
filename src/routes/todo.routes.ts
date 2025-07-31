@@ -19,7 +19,7 @@ export function createTodoRouter(todoController: TodoController): Router {
   router.get("/tags/unused", todoController.getUnusedTags);
   router.post("/tags", validateTagCreate, todoController.createTag);
   router.delete("/tags/id/:id", validateTagId, todoController.deleteTagById);
-  router.delete("/tags/name/:name",validateTagName,todoController.deleteTagByName);
+  router.delete("/tags/name/:name", validateTagName, todoController.deleteTagByName);
 
   // Routes for tasks with validation
   router.get("/todos", todoController.getAllTodos);
