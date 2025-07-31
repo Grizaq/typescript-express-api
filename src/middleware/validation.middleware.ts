@@ -34,11 +34,6 @@ export const validateTodoCreate = (req: Request, res: Response, next: NextFuncti
     }
   }
   
-  if (priority !== undefined && (typeof priority !== 'number' || priority < 1 || priority > 5)) {
-    next(new ValidationError('Priority must be a number between 1 and 5'));
-    return;
-  }
-  
   if (imageUrls !== undefined && !Array.isArray(imageUrls)) {
     next(new ValidationError('Image URLs must be an array'));
     return;
@@ -46,6 +41,12 @@ export const validateTodoCreate = (req: Request, res: Response, next: NextFuncti
   
   if (tags !== undefined && !Array.isArray(tags)) {
     next(new ValidationError('Tags must be an array'));
+    return;
+  }
+
+  if (priority !== undefined && 
+      !['low', 'medium', 'high', 'urgent', 'critical'].includes(priority)) {
+    next(new ValidationError('Priority must be one of: low, medium, high, urgent, critical'));
     return;
   }
   
@@ -84,12 +85,7 @@ export const validateTodoUpdate = (req: Request, res: Response, next: NextFuncti
       return;
     }
   }
-  
-  if (priority !== undefined && (typeof priority !== 'number' || priority < 1 || priority > 5)) {
-    next(new ValidationError('Priority must be a number between 1 and 5'));
-    return;
-  }
-  
+    
   if (imageUrls !== undefined && !Array.isArray(imageUrls)) {
     next(new ValidationError('Image URLs must be an array'));
     return;
@@ -97,6 +93,55 @@ export const validateTodoUpdate = (req: Request, res: Response, next: NextFuncti
   
   if (tags !== undefined && !Array.isArray(tags)) {
     next(new ValidationError('Tags must be an array'));
+    return;
+  }
+
+  if (priority !== undefined && 
+      !['low', 'medium', 'high', 'urgent', 'critical'].includes(priority)) {
+    next(new ValidationError('Priority must be one of: low, medium, high, urgent, critical'));
+    return;
+  }
+  
+  next();
+};
+
+export const validateTagCreate = (req: Request, res: Response, next: NextFunction): void => {
+  const { name } = req.body;
+  
+  if (!name) {
+    next(new ValidationError('Tag name is required'));
+    return;
+  }
+  
+  if (typeof name !== 'string') {
+    next(new ValidationError('Tag name must be a string'));
+    return;
+  }
+  
+  if (name.trim().length < 1) {
+    next(new ValidationError('Tag name cannot be empty'));
+    return;
+  }
+  
+  next();
+};
+
+export const validateTagId = (req: Request, res: Response, next: NextFunction): void => {
+  const id = parseInt(req.params.id);
+  
+  if (isNaN(id) || id <= 0) {
+    next(new ValidationError('Tag ID must be a positive number'));
+    return;
+  }
+  
+  next();
+};
+
+export const validateTagName = (req: Request, res: Response, next: NextFunction): void => {
+  const { name } = req.params;
+  
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    next(new ValidationError('Tag name is required and cannot be empty'));
     return;
   }
   
