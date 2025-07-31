@@ -1,15 +1,22 @@
 ### Get all todos
 GET http://localhost:3000/api/todos
 
-### Get todo by ID
-GET http://localhost:3000/api/todos/1
+### Get todo by ID (use an ID that EXISTS in the database or KABOOM (id not found))
+GET http://localhost:3000/api/todos/2
+
+### Get all tags
+GET http://localhost:3000/api/tags
+
+### Get todos by tag name
+GET http://localhost:3000/api/tags/containing/important
 
 ### Create a basic todo
 POST http://localhost:3000/api/todos
 Content-Type: application/json
 
 {
-  "title": "Learn Express.js"
+  "title": "Learn Express.js",
+  "priority": "medium"
 }
 
 ### Create a complex todo
@@ -20,31 +27,100 @@ Content-Type: application/json
   "title": "Build Android App",
   "description": "Create a mobile app that connects to this REST API",
   "dueDate": "2025-08-30T00:00:00.000Z",
-  "priority": 5,
+  "priority": "high",
   "imageUrls": ["https://example.com/mockup1.jpg", "https://example.com/mockup2.jpg"],
   "tags": ["mobile", "android", "project"]
 }
 
-### Update a todo
+### Create a todo with just required fields
+POST http://localhost:3000/api/todos
+Content-Type: application/json
+
+{
+  "title": "Simple task"
+}
+
+### Update a todo's basic info
 PUT http://localhost:3000/api/todos/2
 Content-Type: application/json
 
 {
   "completed": true,
-  "description": "Updated description"
+  "description": "Updated description again"
+}
+
+### Update todo priority
+PUT http://localhost:3000/api/todos/2
+Content-Type: application/json
+
+{
+  "priority": "medium"
 }
 
 ### Add tags to a todo
-PUT http://localhost:3000/api/todos/1
+PUT http://localhost:3000/api/todos/2
 Content-Type: application/json
 
 {
   "tags": ["important", "learning"]
 }
 
+### Replace tags on a todo
+PUT http://localhost:3000/api/todos/2
+Content-Type: application/json
+
+{
+  "tags": ["new-tag", "replacement-tag"]
+}
+
+### Remove all tags from a todo
+PUT http://localhost:3000/api/todos/2
+Content-Type: application/json
+
+{
+  "tags": []
+}
+
+### Update multiple fields at once
+PUT http://localhost:3000/api/todos/2
+Content-Type: application/json
+
+{
+  "title": "Updated title",
+  "description": "Updated description",
+  "priority": "urgent",
+  "tags": ["important", "urgent"]
+}
+
 ### Mark todo as complete
 PUT http://localhost:3000/api/todos/2/complete
 Content-Type: application/json
 
-### Delete a todo
-DELETE http://localhost:3000/api/todos/1
+### Delete a todo (use an ID that EXISTS in the database or KABOOM (404))
+DELETE http://localhost:3000/api/todos/14
+
+### Get todos by a non-existent tag (should return empty array)
+GET http://localhost:3000/api/tags/containing/non-existent-tag
+
+### Get used tags (tags with count > 0)
+GET http://localhost:3000/api/tags/used
+
+### Get unused tags (tags with count = 0)
+GET http://localhost:3000/api/tags/unused
+
+### Delete tag by ID (keep in mind the id has to exist and be unused)
+DELETE http://localhost:3000/api/tags/id/6
+
+### Add a new tag, add before deleting
+POST http://localhost:3000/api/tags
+Content-Type: application/json
+
+{
+  "name": "feature"
+}
+
+### Delete tag by name, add some name each time wit hthe call above
+DELETE http://localhost:3000/api/tags/name/feature
+
+### Delete a non existent tag
+DELETE http://localhost:3000/api/tags/name/edftegj4
