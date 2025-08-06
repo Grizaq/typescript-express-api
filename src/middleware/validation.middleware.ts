@@ -300,6 +300,7 @@ export const validateRefreshToken = (req: Request, res: Response, next: NextFunc
     next(new ValidationError('Refresh token is required'));
     return;
   }
+  // change to check git behavior
   
   if (typeof token !== 'string') {
     next(new ValidationError('Refresh token must be a string'));
