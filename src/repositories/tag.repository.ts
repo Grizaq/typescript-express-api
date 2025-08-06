@@ -3,14 +3,15 @@ export interface Tag {
   id: number;
   name: string;
   createdAt: Date;
+  userId: number;
 }
 
 export interface TagRepository {
-  findAll(): Promise<Tag[]>;
+  findAll(userId: number): Promise<Tag[]>;
   findById(id: number): Promise<Tag | undefined>;
-  findByName(name: string): Promise<Tag | undefined>;
-  findOrCreate(name: string): Promise<Tag>;
-  create(name: string): Promise<Tag>;
+  findByName(name: string, userId: number): Promise<Tag | undefined>;
+  findOrCreate(name: string, userId: number): Promise<Tag>;
+  create(name: string, userId: number): Promise<Tag>;
   delete(id: number): Promise<Tag | undefined>;
-  deleteByName(name: string): Promise<Tag | undefined>;
+  deleteByName(name: string, userId: number): Promise<Tag | undefined>;
 }

@@ -21,3 +21,15 @@ export class ValidationError extends AppError {
     super(message, 400);
   }
 }
+
+export class AuthenticationError extends AppError {
+  constructor(message: string) {
+    super(message, 401);
+  }
+}
+
+export class AuthorizationError extends AppError {
+  constructor(message: string) {
+    super(message, 403);
+  }
+}

@@ -2,7 +2,7 @@
 import { Todo, PriorityLevel } from "../models/todo.model";
 import { TodoRepository } from "../repositories/todo.repository";
 import { TagRepository } from "../repositories/tag.repository";
-import { NotFoundError } from "../utils/errors";
+import { NotFoundError, ValidationError } from "../utils/errors";
 
 export class TodoService {
   constructor(
@@ -10,12 +10,12 @@ export class TodoService {
     private tagRepository: TagRepository
   ) {}
 
-  async findAll(): Promise<Todo[]> {
-    return this.todoRepository.findAll();
+  async findAll(userId: number): Promise<Todo[]> {
+    return this.todoRepository.findAll(userId);
   }
 
-  async findById(id: number): Promise<Todo> {
-    const todo = await this.todoRepository.findById(id);
+  async findById(id: number, userId: number): Promise<Todo> {
+    const todo = await this.todoRepository.findById(id, userId);
 
     if (!todo) {
       throw new NotFoundError("Todo", id);
@@ -28,7 +28,8 @@ export class TodoService {
     todoData: Omit<
       Todo,
       "id" | "createdAt" | "completed" | "completedAt" | "tags"
-    > & { tags?: string[] }
+    > & { tags?: string[] },
+    userId: number
   ): Promise<Todo> {
     // Set default values
     const newTodo = {
@@ -42,19 +43,21 @@ export class TodoService {
     const tagIds: number[] = [];
     if (todoData.tags && todoData.tags.length > 0) {
       for (const tagName of todoData.tags) {
-        const tag = await this.tagRepository.findOrCreate(tagName);
+        // Find or create tag for this user
+        const tag = await this.tagRepository.findOrCreate(tagName, userId);
         tagIds.push(tag.id);
       }
     }
 
-    return this.todoRepository.create(newTodo, tagIds);
+    return this.todoRepository.create(newTodo, userId, tagIds);
   }
 
   async update(
     id: number,
     data: Partial<Omit<Todo, "id" | "createdAt" | "tags">> & {
       tagNames?: string[];
-    }
+    },
+    userId: number
   ): Promise<Todo> {
     // Prepare tag IDs if tag names were provided
     let tagIds: number[] | undefined = undefined;
@@ -62,7 +65,7 @@ export class TodoService {
     if (data.tagNames !== undefined) {
       tagIds = [];
       for (const tagName of data.tagNames) {
-        const tag = await this.tagRepository.findOrCreate(tagName);
+        const tag = await this.tagRepository.findOrCreate(tagName, userId);
         tagIds.push(tag.id);
       }
 
@@ -70,7 +73,12 @@ export class TodoService {
       delete data.tagNames;
     }
 
-    const updatedTodo = await this.todoRepository.update(id, data, tagIds);
+    const updatedTodo = await this.todoRepository.update(
+      id,
+      data,
+      userId,
+      tagIds
+    );
 
     if (!updatedTodo) {
       throw new NotFoundError("Todo", id);
@@ -79,8 +87,8 @@ export class TodoService {
     return updatedTodo;
   }
 
-  async remove(id: number): Promise<Todo> {
-    const deletedTodo = await this.todoRepository.delete(id);
+  async remove(id: number, userId: number): Promise<Todo> {
+    const deletedTodo = await this.todoRepository.delete(id, userId);
 
     if (!deletedTodo) {
       throw new NotFoundError("Todo", id);
@@ -89,34 +97,64 @@ export class TodoService {
     return deletedTodo;
   }
 
-  async completeTodo(id: number): Promise<Todo> {
-    const completedTodo = await this.todoRepository.markComplete(id);
+  /**
+   * Toggle the completion status of a todo
+   * If it's incomplete, mark as complete with timestamp
+   * If it's complete, mark as incomplete and clear timestamp
+   */
+  async toggleTodoCompletion(id: number, userId: number): Promise<Todo> {
+    console.log(`Toggling completion for todo ${id}`);
 
-    if (!completedTodo) {
+    // First, get the current todo to check its status
+    const currentTodo = await this.findById(id, userId);
+
+    // Log the current status
+    console.log(`Current todo status: completed=${currentTodo.completed}`);
+
+    // Prepare the update data based on current status
+    const updateData: Partial<Omit<Todo, "id" | "createdAt" | "tags">> = {
+      completed: !currentTodo.completed,
+      // When marking incomplete, explicitly set completedAt to null (not undefined)
+      completedAt: !currentTodo.completed ? new Date() : null,
+    };
+
+    console.log(`Updating todo ${id} with data:`, updateData);
+
+    // Update the todo
+    const updatedTodo = await this.todoRepository.update(
+      id,
+      updateData,
+      userId
+    );
+
+    if (!updatedTodo) {
       throw new NotFoundError("Todo", id);
     }
 
-    return completedTodo;
+    console.log("Todo after toggle:", JSON.stringify(updatedTodo));
+    return updatedTodo;
   }
 
-  async findByTag(tagName: string): Promise<Todo[]> {
-    const tag = await this.tagRepository.findByName(tagName);
+  async findByTag(tagName: string, userId: number): Promise<Todo[]> {
+    const tag = await this.tagRepository.findByName(tagName, userId);
 
     if (!tag) {
       return [];
     }
 
-    return this.todoRepository.findByTagId(tag.id);
+    return this.todoRepository.findByTagId(tag.id, userId);
   }
 
-  async getAllTags(): Promise<{ id: number; name: string; count: number }[]> {
-    // Get all tags
-    const tags = await this.tagRepository.findAll();
+  async getAllTags(
+    userId: number
+  ): Promise<{ id: number; name: string; count: number }[]> {
+    // Get all tags for this user
+    const tags = await this.tagRepository.findAll(userId);
 
     // Count todos for each tag
     const result = [];
     for (const tag of tags) {
-      const todos = await this.todoRepository.findByTagId(tag.id);
+      const todos = await this.todoRepository.findByTagId(tag.id, userId);
       result.push({
         id: tag.id,
         name: tag.name,
@@ -127,41 +165,66 @@ export class TodoService {
     return result;
   }
 
-  async getUsedTags(): Promise<{ id: number; name: string; count: number }[]> {
-    const allTags = await this.getAllTags();
+  async getUsedTags(
+    userId: number
+  ): Promise<{ id: number; name: string; count: number }[]> {
+    const allTags = await this.getAllTags(userId);
     return allTags.filter((tag) => tag.count > 0);
   }
 
-  async getUnusedTags(): Promise<
-    { id: number; name: string; count: number }[]
-  > {
-    const allTags = await this.getAllTags();
+  async getUnusedTags(
+    userId: number
+  ): Promise<{ id: number; name: string; count: number }[]> {
+    const allTags = await this.getAllTags(userId);
     return allTags.filter((tag) => tag.count === 0);
   }
 
   async createTag(
-    name: string
+    name: string,
+    userId: number
   ): Promise<{ id: number; name: string; count: number }> {
-    // Check if tag already exists
-    const existingTag = await this.tagRepository.findByName(name);
-    if (existingTag) {
-      throw new Error(`Tag with name "${name}" already exists`);
+    try {
+      // Check if tag already exists for this user
+      const existingTag = await this.tagRepository.findByName(name, userId);
+      if (existingTag) {
+        throw new ValidationError(`Tag with name "${name}" already exists`);
+      }
+
+      // Create the tag
+      const newTag = await this.tagRepository.create(name, userId);
+
+      // Return with count 0 since it's a new tag
+      return {
+        id: newTag.id,
+        name: newTag.name,
+        count: 0,
+      };
+    } catch (error) {
+      // Properly handle database constraint errors
+      if (
+        error instanceof Error &&
+        (error.message.includes("duplicate key") ||
+          error.message.includes("unique constraint"))
+      ) {
+        throw new ValidationError(`Tag with name "${name}" already exists`);
+      }
+      // Re-throw other errors
+      throw error;
     }
-
-    // Create the tag
-    const newTag = await this.tagRepository.create(name);
-
-    // Return with count 0 since it's a new tag
-    return {
-      id: newTag.id,
-      name: newTag.name,
-      count: 0,
-    };
   }
 
-  async deleteTag(id: number): Promise<{ id: number; name: string }> {
+  async deleteTag(
+    id: number,
+    userId: number
+  ): Promise<{ id: number; name: string }> {
+    // Check if tag belongs to user
+    const tag = await this.tagRepository.findById(id);
+    if (!tag || tag.userId !== userId) {
+      throw new NotFoundError("Tag", id);
+    }
+
     // Check if tag is in use
-    const todos = await this.todoRepository.findByTagId(id);
+    const todos = await this.todoRepository.findByTagId(id, userId);
     if (todos.length > 0) {
       throw new Error(
         `Cannot delete tag with ID ${id} because it is used by ${todos.length} todos`
@@ -180,14 +243,17 @@ export class TodoService {
     };
   }
 
-  async deleteTagByName(name: string): Promise<{ id: number; name: string }> {
+  async deleteTagByName(
+    name: string,
+    userId: number
+  ): Promise<{ id: number; name: string }> {
     // Find the tag
-    const tag = await this.tagRepository.findByName(name);
+    const tag = await this.tagRepository.findByName(name, userId);
     if (!tag) {
       throw new NotFoundError("Tag", name);
     }
 
     // Delete using the ID method
-    return this.deleteTag(tag.id);
+    return this.deleteTag(tag.id, userId);
   }
 }
