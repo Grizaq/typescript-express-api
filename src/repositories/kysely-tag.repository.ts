@@ -6,16 +6,18 @@ import { Tag, TagRepository } from './tag.repository';
 export class KyselyTagRepository implements TagRepository {
   constructor(private db: Kysely<Database>) {}
 
-  async findAll(): Promise<Tag[]> {
+  async findAll(userId: number): Promise<Tag[]> {
     const tags = await this.db
       .selectFrom('tag')
       .selectAll()
+      .where('user_id', '=', userId)
       .execute();
     
     return tags.map(tag => ({
       id: tag.id,
       name: tag.name,
-      createdAt: tag.created_at
+      createdAt: tag.created_at,
+      userId: tag.user_id
     }));
   }
 
@@ -31,15 +33,17 @@ export class KyselyTagRepository implements TagRepository {
     return {
       id: tag.id,
       name: tag.name,
-      createdAt: tag.created_at
+      createdAt: tag.created_at,
+      userId: tag.user_id
     };
   }
 
-  async findByName(name: string): Promise<Tag | undefined> {
+  async findByName(name: string, userId: number): Promise<Tag | undefined> {
     const tag = await this.db
       .selectFrom('tag')
       .selectAll()
       .where('name', '=', name)
+      .where('user_id', '=', userId)
       .executeTakeFirst();
     
     if (!tag) return undefined;
@@ -47,30 +51,36 @@ export class KyselyTagRepository implements TagRepository {
     return {
       id: tag.id,
       name: tag.name,
-      createdAt: tag.created_at
+      createdAt: tag.created_at,
+      userId: tag.user_id
     };
   }
 
-  async findOrCreate(name: string): Promise<Tag> {
+  async findOrCreate(name: string, userId: number): Promise<Tag> {
     // First try to find the tag
-    const existingTag = await this.findByName(name);
+    const existingTag = await this.findByName(name, userId);
     if (existingTag) return existingTag;
     
     // If not found, create it
-    return this.create(name);
+    return this.create(name, userId);
   }
 
-  async create(name: string): Promise<Tag> {
+  async create(name: string, userId: number): Promise<Tag> {
     const result = await this.db
       .insertInto('tag')
-      .values({ name, created_at: new Date() })
-      .returning(['id', 'name', 'created_at'])
+      .values({ 
+        name, 
+        created_at: new Date(),
+        user_id: userId 
+      })
+      .returning(['id', 'name', 'created_at', 'user_id'])
       .executeTakeFirstOrThrow();
     
     return {
       id: result.id,
       name: result.name,
-      createdAt: result.created_at
+      createdAt: result.created_at,
+      userId: result.user_id
     };
   }
 
@@ -88,8 +98,8 @@ export class KyselyTagRepository implements TagRepository {
     return tagToDelete;
   }
 
-  async deleteByName(name: string): Promise<Tag | undefined> {
-    const tagToDelete = await this.findByName(name);
+  async deleteByName(name: string, userId: number): Promise<Tag | undefined> {
+    const tagToDelete = await this.findByName(name, userId);
     if (!tagToDelete) return undefined;
 
     return this.delete(tagToDelete.id);

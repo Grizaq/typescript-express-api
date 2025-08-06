@@ -1,5 +1,4 @@
 // src/middleware/validation.middleware.ts
-// src/middleware/validation.middleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { ValidationError } from '../utils/errors';
 
@@ -148,6 +147,161 @@ export const validateTagName = (req: Request, res: Response, next: NextFunction)
   
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
     next(new ValidationError('Tag name is required and cannot be empty'));
+    return;
+  }
+  
+  next();
+};
+
+export const validateUserRegistration = (req: Request, res: Response, next: NextFunction): void => {
+  const { name, email, password } = req.body;
+  
+  if (!name) {
+    next(new ValidationError('Name is required'));
+    return;
+  }
+  
+  if (typeof name !== 'string') {
+    next(new ValidationError('Name must be a string'));
+    return;
+  }
+  
+  if (name.trim().length < 2) {
+    next(new ValidationError('Name must be at least 2 characters long'));
+    return;
+  }
+  
+  if (!email) {
+    next(new ValidationError('Email is required'));
+    return;
+  }
+  
+  if (typeof email !== 'string') {
+    next(new ValidationError('Email must be a string'));
+    return;
+  }
+  
+  // Simple email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    next(new ValidationError('Invalid email format'));
+    return;
+  }
+  
+  if (!password) {
+    next(new ValidationError('Password is required'));
+    return;
+  }
+  
+  if (typeof password !== 'string') {
+    next(new ValidationError('Password must be a string'));
+    return;
+  }
+  
+  if (password.length < 8) {
+    next(new ValidationError('Password must be at least 8 characters long'));
+    return;
+  }
+  
+  next();
+};
+
+export const validateLogin = (req: Request, res: Response, next: NextFunction): void => {
+  const { email, password } = req.body;
+  
+  if (!email) {
+    next(new ValidationError('Email is required'));
+    return;
+  }
+  
+  if (typeof email !== 'string') {
+    next(new ValidationError('Email must be a string'));
+    return;
+  }
+  
+  if (!password) {
+    next(new ValidationError('Password is required'));
+    return;
+  }
+  
+  if (typeof password !== 'string') {
+    next(new ValidationError('Password must be a string'));
+    return;
+  }
+  
+  next();
+};
+
+export const validateVerification = (req: Request, res: Response, next: NextFunction): void => {
+  const { token } = req.body;
+  
+  if (!token) {
+    next(new ValidationError('Verification token is required'));
+    return;
+  }
+  
+  if (typeof token !== 'string') {
+    next(new ValidationError('Verification token must be a string'));
+    return;
+  }
+  
+  // For OTP, ensure it's a 6-digit number
+  if (!/^\d{6}$/.test(token)) {
+    next(new ValidationError('Verification token must be a 6-digit number'));
+    return;
+  }
+  
+  next();
+};
+
+export const validatePasswordReset = (req: Request, res: Response, next: NextFunction): void => {
+  const { token, newPassword } = req.body;
+  
+  if (!token) {
+    next(new ValidationError('Reset token is required'));
+    return;
+  }
+  
+  if (typeof token !== 'string') {
+    next(new ValidationError('Reset token must be a string'));
+    return;
+  }
+  
+  // For OTP, ensure it's a 6-digit number
+  if (!/^\d{6}$/.test(token)) {
+    next(new ValidationError('Reset token must be a 6-digit number'));
+    return;
+  }
+  
+  if (!newPassword) {
+    next(new ValidationError('New password is required'));
+    return;
+  }
+  
+  if (typeof newPassword !== 'string') {
+    next(new ValidationError('New password must be a string'));
+    return;
+  }
+  
+  if (newPassword.length < 8) {
+    next(new ValidationError('New password must be at least 8 characters long'));
+    return;
+  }
+  
+  next();
+};
+
+export const validateRefreshToken = (req: Request, res: Response, next: NextFunction): void => {
+  // Check for token in request body or cookie
+  const token = req.cookies?.refreshToken || req.body?.refreshToken;
+  
+  if (!token) {
+    next(new ValidationError('Refresh token is required'));
+    return;
+  }
+  
+  if (typeof token !== 'string') {
+    next(new ValidationError('Refresh token must be a string'));
     return;
   }
   

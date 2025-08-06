@@ -1,27 +1,143 @@
-### Get all todos
-GET http://localhost:3000/api/todos
+### Variables
+@baseUrl = http://localhost:3000/api
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjQsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlhdCI6MTc1NDA0OTQ2OCwiZXhwIjoxNzU0MTM1ODY4fQ.d-bR5kb0lw4BsbpkuudJHDQKCBTwbdEaO_znlKC0Mik
+@refreshToken = 6aa57bc7833b6ad2c96071563afa50e3b3d2ad54e0acfa044ba8059624df468c8849bfa2d02a1304
 
-### Get todo by ID (use an ID that EXISTS in the database or KABOOM (id not found))
-GET http://localhost:3000/api/todos/2
+### ====================================
+### Authentication Endpoints
+### ====================================
 
-### Get all tags
-GET http://localhost:3000/api/tags
-
-### Get todos by tag name
-GET http://localhost:3000/api/tags/containing/important
-
-### Create a basic todo
-POST http://localhost:3000/api/todos
+### Register a new user
+# @name register
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "title": "Learn Express.js",
-  "priority": "medium"
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123"
 }
 
-### Create a complex todo
-POST http://localhost:3000/api/todos
+### Verify email (use the token from the registration response)
+# @name verifyEmail
+POST {{baseUrl}}/auth/verify-email
 Content-Type: application/json
+
+{
+  "token": "715313"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Get Access Token and Refresh Token (runs after login)
+@accessToken = {login.response.body.data.accessToken}
+# If your refresh token is in a cookie, you can't capture it this way.
+# If it's in the response body, you can use:
+# @refreshToken = {{login.response.body.data.refreshToken}}
+
+### Refresh token
+# @name refreshToken
+POST {{baseUrl}}/auth/refresh-token
+Content-Type: application/json
+# Refresh token should be sent as a cookie automatically
+# But if you need to send it manually:
+# Cookie: refreshToken={{refreshToken}}
+
+{
+  "refreshToken": "{refreshToken}"
+}
+
+### Get current user (protected route)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{accessToken}}
+
+### Get all active sessions (protected route)
+GET {{baseUrl}}/auth/sessions
+Authorization: Bearer {{accessToken}}
+
+### Revoke a specific session (protected route)
+DELETE {{baseUrl}}/auth/sessions/1
+Authorization: Bearer {{accessToken}}
+
+### Revoke all other sessions (protected route)
+DELETE {{baseUrl}}/auth/sessions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{refreshToken}"
+}
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "refreshToken": "{refreshToken}"
+}
+
+### Resend verification email
+POST {{baseUrl}}/auth/resend-verification
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+### Request password reset
+POST {{baseUrl}}/auth/request-password-reset
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+### Reset password
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "123456",
+  "newPassword": "newpassword123"
+}
+
+### ====================================
+### Todo Endpoints
+### ====================================
+
+### Get all todos (authenticated)
+GET {{baseUrl}}/todos
+Authorization: Bearer {{accessToken}}
+
+### Get todo by ID (authenticated)
+GET {{baseUrl}}/todos/1
+Authorization: Bearer {{accessToken}}
+
+### Create a simple todo (authenticated)
+POST {{baseUrl}}/todos
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Learn Express.js",
+  "description": "Build a RESTful API with Express and TypeScript",
+  "priority": "medium",
+  "tags": ["learning", "programming"]
+}
+
+### Create a complex todo (authenticated)
+POST {{baseUrl}}/todos
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 
 {
   "title": "Build Android App",
@@ -32,58 +148,10 @@ Content-Type: application/json
   "tags": ["mobile", "android", "project"]
 }
 
-### Create a todo with just required fields
-POST http://localhost:3000/api/todos
+### Update a todo (authenticated)
+PUT {{baseUrl}}/todos/1
 Content-Type: application/json
-
-{
-  "title": "Simple task"
-}
-
-### Update a todo's basic info
-PUT http://localhost:3000/api/todos/2
-Content-Type: application/json
-
-{
-  "completed": true,
-  "description": "Updated description again"
-}
-
-### Update todo priority
-PUT http://localhost:3000/api/todos/2
-Content-Type: application/json
-
-{
-  "priority": "medium"
-}
-
-### Add tags to a todo
-PUT http://localhost:3000/api/todos/2
-Content-Type: application/json
-
-{
-  "tags": ["important", "learning"]
-}
-
-### Replace tags on a todo
-PUT http://localhost:3000/api/todos/2
-Content-Type: application/json
-
-{
-  "tags": ["new-tag", "replacement-tag"]
-}
-
-### Remove all tags from a todo
-PUT http://localhost:3000/api/todos/2
-Content-Type: application/json
-
-{
-  "tags": []
-}
-
-### Update multiple fields at once
-PUT http://localhost:3000/api/todos/2
-Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 
 {
   "title": "Updated title",
@@ -92,35 +160,47 @@ Content-Type: application/json
   "tags": ["important", "urgent"]
 }
 
-### Mark todo as complete
-PUT http://localhost:3000/api/todos/2/complete
+### Toggle todo completion status (authenticated)
+PUT {{baseUrl}}/todos/1/toggle
+Authorization: Bearer {{accessToken}}
+
+### Delete a todo (authenticated)
+DELETE {{baseUrl}}/todos/1
+Authorization: Bearer {{accessToken}}
+
+### ====================================
+### Tag Endpoints
+### ====================================
+
+### Get all tags (authenticated)
+GET {{baseUrl}}/tags
+Authorization: Bearer {{accessToken}}
+
+### Get todos by tag name (authenticated)
+GET {{baseUrl}}/tags/containing/important
+Authorization: Bearer {{accessToken}}
+
+### Get used tags (authenticated)
+GET {{baseUrl}}/tags/used
+Authorization: Bearer {{accessToken}}
+
+### Get unused tags (authenticated)
+GET {{baseUrl}}/tags/unused
+Authorization: Bearer {{accessToken}}
+
+### Create a new tag (authenticated)
+POST {{baseUrl}}/tags
 Content-Type: application/json
-
-### Delete a todo (use an ID that EXISTS in the database or KABOOM (404))
-DELETE http://localhost:3000/api/todos/14
-
-### Get todos by a non-existent tag (should return empty array)
-GET http://localhost:3000/api/tags/containing/non-existent-tag
-
-### Get used tags (tags with count > 0)
-GET http://localhost:3000/api/tags/used
-
-### Get unused tags (tags with count = 0)
-GET http://localhost:3000/api/tags/unused
-
-### Delete tag by ID (keep in mind the id has to exist and be unused)
-DELETE http://localhost:3000/api/tags/id/6
-
-### Add a new tag, add before deleting
-POST http://localhost:3000/api/tags
-Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 
 {
   "name": "feature"
 }
 
-### Delete tag by name, add some name each time wit hthe call above
-DELETE http://localhost:3000/api/tags/name/feature
+### Delete tag by ID (authenticated)
+DELETE {{baseUrl}}/tags/id/1
+Authorization: Bearer {{accessToken}}
 
-### Delete a non existent tag
-DELETE http://localhost:3000/api/tags/name/edftegj4
+### Delete tag by name (authenticated)
+DELETE {{baseUrl}}/tags/name/feature
+Authorization: Bearer {{accessToken}}

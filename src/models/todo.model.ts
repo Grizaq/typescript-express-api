@@ -10,7 +10,7 @@ export interface Todo {
   completed: boolean;
   createdAt: Date;
   dueDate?: Date;
-  completedAt?: Date;
+  completedAt?: Date | null;
   priority: PriorityLevel;  // Changed from number to enum
   imageUrls: string[];
   tags?: Tag[];              // Changed from string[] to Tag[]

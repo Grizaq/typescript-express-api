@@ -8,9 +8,13 @@ import { Tag } from "./tag.repository";
 export class KyselyTodoRepository implements TodoRepository {
   constructor(private db: Kysely<Database>) {}
 
-  async findAll(): Promise<Todo[]> {
-    // Query the database for all todos
-    const todos = await this.db.selectFrom("todo").selectAll().execute();
+  async findAll(userId: number): Promise<Todo[]> {
+    // Query the database for all todos belonging to this user
+    const todos = await this.db
+      .selectFrom("todo")
+      .selectAll()
+      .where("user_id", "=", userId)
+      .execute();
 
     // Map database records to our Todo model
     const result: Todo[] = [];
@@ -35,12 +39,13 @@ export class KyselyTodoRepository implements TodoRepository {
     return result;
   }
 
-  async findById(id: number): Promise<Todo | undefined> {
-    // Query the database for a specific todo
+  async findById(id: number, userId: number): Promise<Todo | undefined> {
+    // Query the database for a specific todo belonging to this user
     const todo = await this.db
       .selectFrom("todo")
       .selectAll()
       .where("id", "=", id)
+      .where("user_id", "=", userId)
       .executeTakeFirst();
 
     // If no todo is found, return undefined
@@ -66,6 +71,7 @@ export class KyselyTodoRepository implements TodoRepository {
 
   async create(
     todoData: Omit<Todo, "id" | "createdAt" | "tags">,
+    userId: number,
     tagIds: number[] = []
   ): Promise<Todo> {
     // Begin a transaction
@@ -79,6 +85,7 @@ export class KyselyTodoRepository implements TodoRepository {
         completed_at: todoData.completedAt || null,
         priority: todoData.priority,
         image_urls: JSON.stringify(todoData.imageUrls || []),
+        user_id: userId,
       };
 
       // Insert the todo
@@ -95,6 +102,7 @@ export class KyselyTodoRepository implements TodoRepository {
           "completed_at",
           "priority",
           "image_urls",
+          "user_id",
         ])
         .executeTakeFirstOrThrow();
 
@@ -125,10 +133,21 @@ export class KyselyTodoRepository implements TodoRepository {
   async update(
     id: number,
     todoData: Partial<Omit<Todo, "id" | "createdAt" | "tags">>,
+    userId: number,
     tagIds?: number[]
   ): Promise<Todo | undefined> {
     // Begin a transaction
     return await this.db.transaction().execute(async (trx) => {
+      // First, verify the todo belongs to this user
+      const todoExists = await trx
+        .selectFrom("todo")
+        .select("id")
+        .where("id", "=", id)
+        .where("user_id", "=", userId)
+        .executeTakeFirst();
+
+      if (!todoExists) return undefined;
+
       // Prepare the update data
       const updateData: any = {};
 
@@ -149,7 +168,7 @@ export class KyselyTodoRepository implements TodoRepository {
       // Special handling for completed status
       if (todoData.completed === true) {
         // Check if the todo is currently not completed
-        const currentTodo = await this.findById(id);
+        const currentTodo = await this.findById(id, userId);
         if (currentTodo && !currentTodo.completed) {
           updateData.completed_at = new Date();
         }
@@ -159,20 +178,17 @@ export class KyselyTodoRepository implements TodoRepository {
 
       // If nothing to update in the todo itself, and no tag changes
       if (Object.keys(updateData).length === 0 && tagIds === undefined) {
-        return this.findById(id);
+        return this.findById(id, userId);
       }
 
       // Update the todo if there are changes
       if (Object.keys(updateData).length > 0) {
-        const result = await trx
+        await trx
           .updateTable("todo")
           .set(updateData)
           .where("id", "=", id)
-          .returning(["id"])
-          .executeTakeFirst();
-
-        // If no todo is found to update, return undefined
-        if (!result) return undefined;
+          .where("user_id", "=", userId)
+          .execute();
       }
 
       // Update tags if provided
@@ -181,47 +197,68 @@ export class KyselyTodoRepository implements TodoRepository {
       }
 
       // Get the updated todo
-      return this.findById(id);
+      return this.findById(id, userId);
     });
   }
 
-  async delete(id: number): Promise<Todo | undefined> {
+  async delete(id: number, userId: number): Promise<Todo | undefined> {
     // Begin a transaction
     return await this.db.transaction().execute(async (trx) => {
       // Get the todo before deleting it
-      const todoToDelete = await this.findById(id);
+      const todoToDelete = await this.findById(id, userId);
       if (!todoToDelete) return undefined;
 
       // Delete all tag associations first
       await trx.deleteFrom("todo_tag").where("todo_id", "=", id).execute();
 
       // Delete the todo
-      await trx.deleteFrom("todo").where("id", "=", id).execute();
+      await trx
+        .deleteFrom("todo")
+        .where("id", "=", id)
+        .where("user_id", "=", userId)
+        .execute();
 
       return todoToDelete;
     });
   }
 
-  async markComplete(id: number): Promise<Todo | undefined> {
+  async markComplete(id: number, userId: number): Promise<Todo | undefined> {
     // Special method to mark a todo as complete
-    return this.update(id, {
-      completed: true,
-      completedAt: new Date(),
-    });
+    console.log(`Repository marking todo ${id} as complete`);
+    const now = new Date();
+    
+    // Use executeUpdate to get real-time feedback on the operation
+    const updateResult = await this.db
+      .updateTable('todo')
+      .set({
+        completed: true,
+        completed_at: now
+      })
+      .where('id', '=', id)
+      .where('user_id', '=', userId)
+      .execute();
+      
+    console.log(`Update result: ${JSON.stringify(updateResult)}`);
+    
+    // Return the updated todo
+    return this.findById(id, userId);
   }
 
-  async findByTagId(tagId: number): Promise<Todo[]> {
-    // Find all todos that have a specific tag
+
+  async findByTagId(tagId: number, userId: number): Promise<Todo[]> {
+    // Find all todos that have a specific tag and belong to this user
     const todoIds = await this.db
       .selectFrom("todo_tag")
+      .innerJoin("todo", "todo.id", "todo_tag.todo_id")
       .select("todo_id")
-      .where("tag_id", "=", tagId)
+      .where("todo_tag.tag_id", "=", tagId)
+      .where("todo.user_id", "=", userId)
       .execute();
 
     // Get the complete todos
     const todos: Todo[] = [];
     for (const { todo_id } of todoIds) {
-      const todo = await this.findById(todo_id);
+      const todo = await this.findById(todo_id, userId);
       if (todo) todos.push(todo);
     }
 
@@ -288,6 +325,7 @@ export class KyselyTodoRepository implements TodoRepository {
       id: tag.id,
       name: tag.name,
       createdAt: tag.created_at,
+      userId: tag.user_id
     }));
   }
 }
